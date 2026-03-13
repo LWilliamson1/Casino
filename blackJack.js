@@ -1,13 +1,28 @@
 $(document).ready(function() {
 
-	function Deck(id, remaining, success, shuffled){
-		this.id = id;
-		this.remaining = remaining;
-		this.success = success;
-		this.shuffled = shuffled;
+	function renderCard(card) {
+		var suitSymbols = { "SPADES": "&#9824;", "HEARTS": "&#9829;", "DIAMONDS": "&#9830;", "CLUBS": "&#9827;" };
+		var suitClass = (card.suit === "HEARTS" || card.suit === "DIAMONDS") ? "card-red" : "card-black";
+		var displayValue = card.value === "ACE" ? "A" :
+		                   card.value === "JACK" ? "J" :
+		                   card.value === "QUEEN" ? "Q" :
+		                   card.value === "KING" ? "K" : card.value;
+		var sym = suitSymbols[card.suit];
+		return '<div class="playing-card ' + suitClass + '">' +
+		       '<div class="card-corner card-top-left">' + displayValue + '<br>' + sym + '</div>' +
+		       '<div class="card-center-suit">' + sym + '</div>' +
+		       '<div class="card-corner card-bottom-right">' + displayValue + '<br>' + sym + '</div>' +
+		       '</div>';
 	}
 
-	function Player(type, name, deckId) {
+	function Deck(cards) {
+		this.cards = cards;
+		this.remaining = cards.length;
+		this.success = true;
+		this.shuffled = true;
+	}
+
+	function Player(type, name) {
 		this.type = type;
 		this.name = name;
 		this.score = 0;
@@ -18,18 +33,17 @@ $(document).ready(function() {
 			var aceCount = 0;
 			var countNum = this.hand.length;
 			var oneCardScore = 0;
-			var twoCardScore = 0;
 			if(this.type == "dealer" && this.cardCount==0){
 				countNum = 1;
 			}
-			
+
 			for(var i=0; i < countNum; i++){
 				if(isNaN(this.hand[i]["value"])){
 					if(this.hand[i]["value"]!="ACE"){
 						this.score = this.score + 10;
 					}
 					else{
-						aceCount++
+						aceCount++;
 						if(this.score <= 10){
 							this.score = this.score + 11;
 						}
@@ -55,8 +69,8 @@ $(document).ready(function() {
 						this.score=oneCardScore;
 					}
 				}
-				
-				
+
+
 			}
 			while(this.score > 21 && aceCount > 0){
 				this.score = this.score - 10;
@@ -64,13 +78,13 @@ $(document).ready(function() {
 			}
 			this.displayScore();
 		}
-		this.getScore = function getScore(){	
-			return this.score;	
+		this.getScore = function getScore(){
+			return this.score;
 		}
 		this.displayScore = function displayScore(){
 			$("#"+this.type+"Status").html("Count:"+this.score);
 		}
-		
+
 		this.bust = function bust(){
 			$("#"+this.type+"Status").html("Bust");
 			busted();
@@ -79,24 +93,24 @@ $(document).ready(function() {
 			draw(deckId, this, 1);
 			this.setScore();
 			this.showHand();
-			
+
 			if(this.score > 21){
 				this.bust();
 			}
 		}
-		
+
 		this.showHand = function showHand() {
 			var cardsToShow = this.hand.length;
 			if(this.type=="dealer" && this.cardCount == 0){
 				cardsToShow = 1;
 			}
-			
+
 			for(var i = this.cardCount; i < cardsToShow; i++){
 				if(this.cardCount % 3 == 0 && this.cardCount != 0){
-					$("#"+this.name+" tr").last().after("<tr><td><img src="+this.hand[i]["image"]+"></img></td>");
+					$("#"+this.name+" tr").last().after("<tr><td>" + renderCard(this.hand[i]) + "</td></tr>");
 				}
 				else{
-					$("#"+this.name+" tr").last().append("<td><img src="+this.hand[i]["image"]+"></img></td>");
+					$("#"+this.name+" tr").last().append("<td>" + renderCard(this.hand[i]) + "</td>");
 				}
 			}
 			if(this.cardCount==0 && this.type == "player"){
@@ -108,53 +122,46 @@ $(document).ready(function() {
 		}
 	}
 
-	createNewDeck = function () {
-		var newDeck = new XMLHttpRequest();
-		var url = "http://deckofcardsapi.com/api/deck/new/shuffle/?deck_count=6";
-		newDeck.open("GET", url, false);
-		newDeck.send();
-		newDeck = JSON.parse(newDeck.responseText);
-		deck = new Deck(newDeck["deck_id"], newDeck["remaining"],newDeck["success"], newDeck["shuffled"]);
+	function buildShuffledCards() {
+		var suits = ["SPADES", "HEARTS", "DIAMONDS", "CLUBS"];
+		var values = ["ACE", "2", "3", "4", "5", "6", "7", "8", "9", "10", "JACK", "QUEEN", "KING"];
+		var cards = [];
+		for (var d = 0; d < 6; d++) {
+			for (var s = 0; s < suits.length; s++) {
+				for (var v = 0; v < values.length; v++) {
+					cards.push({ value: values[v], suit: suits[s] });
+				}
+			}
+		}
+		for (var i = cards.length - 1; i > 0; i--) {
+			var j = Math.floor(Math.random() * (i + 1));
+			var tmp = cards[i]; cards[i] = cards[j]; cards[j] = tmp;
+		}
+		return cards;
+	}
 
+	createNewDeck = function () {
+		deck = new Deck(buildShuffledCards());
 	}
 
 	shuffleDeck = function (deck) {
-		var shuffle = new XMLHttpRequest();
-		var url = "http://deckofcardsapi.com/api/deck/"+deck.id+"/shuffle/";
-		shuffle.open("GET", url, false);
-		shuffle.send();
-		var newDeck = JSON.parse(newDeck.responseText);
-		deck = new Deck(newDeck["deck_id"], newDeck["remaining"],newDeck["success"], newDeck["shuffled"]);
+		var cards = buildShuffledCards();
+		deck.cards = cards;
+		deck.remaining = cards.length;
+		deck.success = true;
+		deck.shuffled = true;
 	}
-	
+
 	draw = function (id, player, count) {
-
-		var draw = new XMLHttpRequest();
-		var url = "http://deckofcardsapi.com/api/deck/"+id+"/draw/?count="+count;
-		draw.open("GET", url, false);
-		draw.send();
-		var hand = player.hand;
-		var cards = JSON.parse(draw.responseText)["cards"]
-
-		for(var i=0; i < cards.length; i++){
-			hand.push(cards[i]);
+		var drawn = deck.cards.splice(0, count);
+		deck.remaining = deck.cards.length;
+		for (var i = 0; i < drawn.length; i++) {
+			player.hand.push(drawn[i]);
 		}
-		player.hand = hand;
-		return JSON.parse(draw.responseText);
+		return { cards: drawn };
 	}
-	
-	addToHand = function(id, player, cards){
-		var pile = new XMLHttpRequest();
-		var url = "http://deckofcardsapi.com/api/deck/"+id+"/pile/"+player.name+"/add/?cards="+hand;
-		pile.open("GET", url, false);
-		pile.send();
-		console.log(JSON.parse(pile.responseText));
 
-		return JSON.parse(pile.responseText);			
-	}
-	
-	
-	playDealer = function(dealer, deckId){	 
+	playDealer = function(dealer, deckId){
 		dealer.setScore();
 		while(dealer.score < 17 && dealer.score < 21){
 			dealer.hit(deckId);
@@ -162,9 +169,9 @@ $(document).ready(function() {
 			},1000);
 		}
 	}
-	
+
 	displayWinner = function(){
-		
+
 		if(dealer.score > player.score && dealer.score <= 21 || player.score > 21){
 			if(dealer.hand.length == 2 && dealer.score==21){
 				dealer.setScore();
@@ -180,7 +187,7 @@ $(document).ready(function() {
 				dealer.showHand();
 				dealer.setScore();
 				$("#playerStatus").html("BLACKJACK!").css("color", "gold");
-				
+
 			}
 			else{
 				$("#playerStatus").html("Winner!");
@@ -198,30 +205,30 @@ $(document).ready(function() {
 		dealer.showHand();
 		stay.prop("disabled",true);
 	}
-	
+
 	startGame = function() {
-		
+
 		draw(deck.id, player, 2);
 		draw(deck.id, dealer, 2);
 
 		player.setScore();
 		dealer.setScore();
-		
+
 		if(player.score == 21){
 			displayWinner(dealer,player);
 		}
-		
+
 		player.showHand();
 		dealer.showHand();
-	
+
 	}
 
 	var deck;
 	createNewDeck();
-	
+
 	if(deck.success){
 
-		var player = new Player("player", "Player1", deck.id);	
+		var player = new Player("player", "Player1");
 		var dealer = new Player("dealer", "Dealer");
 	}
 	else{
@@ -230,9 +237,9 @@ $(document).ready(function() {
 	var hit = $("#hit");
 	var stay = $("#stay");
 	var playAgain = $("#playAgain");
-	
+
 	startGame();
-	
+
 	hit.mouseup(function() {
 		player.hit(deck.id);
 
@@ -248,11 +255,11 @@ $(document).ready(function() {
 		if(deck.remaining < 100){
 			shuffleDeck(deck);
 		}
-			
+
 		if(deck.success){
 
-			player = new Player("player", "Player1", deck.id);	
-			dealer = new Player("dealer", "Dealer", deck.id);
+			player = new Player("player", "Player1");
+			dealer = new Player("dealer", "Dealer");
 			hit.prop("disabled",false);
 			stay.prop("disabled",false);
 			$(".table").html("<tr></tr>");
@@ -262,8 +269,8 @@ $(document).ready(function() {
 		else{
 			//error message
 		}
-		
-		
+
+
 		startGame();
 	});
 });
