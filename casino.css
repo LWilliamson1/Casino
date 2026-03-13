@@ -1,68 +1,334 @@
+/* ============================================================
+   Base
+   ============================================================ */
+*, *::before, *::after { box-sizing: border-box; }
+
 body {
-	background-color: #194D1E;
+	background-color: #1a5226;
+	background-image:
+		radial-gradient(ellipse at 15% 85%, rgba(0,0,0,0.2) 0%, transparent 55%),
+		radial-gradient(ellipse at 85% 15%, rgba(0,0,0,0.2) 0%, transparent 55%);
+	padding-top: 50px;
+	margin: 0;
+	font-family: Arial, Helvetica, sans-serif;
 }
 
-h1{
-	color: #F7FCF8;
+/* ============================================================
+   Navbar — dark with gold accents
+   ============================================================ */
+.navbar-inverse {
+	background-color: #080808 !important;
+	border-color: #c9a84c !important;
 }
-
-h1{
-	color: #F7FCF8;
-
+.navbar-inverse .navbar-brand {
+	color: #c9a84c !important;
+	font-family: Georgia, serif;
+	letter-spacing: 2px;
 }
+.navbar-inverse .navbar-brand:hover { color: #f0d080 !important; }
+.navbar-inverse .navbar-nav > li > a { color: #999 !important; }
+.navbar-inverse .navbar-nav > li > a:hover,
+.navbar-inverse .navbar-nav > .active > a { color: #c9a84c !important; background: transparent !important; }
+.navbar-inverse .navbar-toggle .icon-bar { background-color: #c9a84c; }
+.navbar-inverse .navbar-toggle { border-color: #c9a84c; }
 
-#playerStatus, #dealerStatus{
-	color: #F7FCF8;
-	float: right;
-}
-
-.playing-card {
-	display: inline-block;
+/* ============================================================
+   Casino Royale Hero Banner
+   ============================================================ */
+.casino-hero {
+	background: linear-gradient(160deg, #05050c 0%, #0e0e28 45%, #161640 65%, #05050c 100%);
+	border-bottom: 2px solid #c9a84c;
+	padding: 32px 20px 28px;
+	text-align: center;
 	position: relative;
-	width: 113px;
-	height: 157px;
+	overflow: hidden;
+}
+
+/* Large faint suits in background */
+.casino-hero::before {
+	content: "♠  ♥  ♦  ♣";
+	position: absolute;
+	font-size: 160px;
+	color: #c9a84c;
+	opacity: 0.03;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	white-space: nowrap;
+	pointer-events: none;
+	letter-spacing: 24px;
+}
+
+/* Subtle diagonal line texture */
+.casino-hero::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	background: repeating-linear-gradient(
+		45deg,
+		transparent,
+		transparent 38px,
+		rgba(201,168,76,0.018) 38px,
+		rgba(201,168,76,0.018) 39px
+	);
+	pointer-events: none;
+}
+
+.hero-suits {
+	display: block;
+	font-size: clamp(1rem, 3vw, 1.6rem);
+	letter-spacing: 22px;
+	color: #c9a84c;
+	opacity: 0.65;
+	margin-bottom: 10px;
+}
+
+.casino-hero h1 {
+	font-family: Georgia, 'Times New Roman', serif;
+	font-size: clamp(1.7rem, 5.5vw, 3rem);
+	color: #c9a84c;
+	text-transform: uppercase;
+	letter-spacing: clamp(5px, 1.5vw, 12px);
+	text-shadow:
+		0 0 50px rgba(201,168,76,0.35),
+		0 2px 6px rgba(0,0,0,0.9);
+	margin: 0 0 8px;
+	line-height: 1.1;
+}
+
+.casino-hero p {
+	color: #666688;
+	font-size: clamp(0.65rem, 1.5vw, 0.8rem);
+	letter-spacing: clamp(3px, 1vw, 8px);
+	text-transform: uppercase;
+	margin: 0;
+}
+
+/* ============================================================
+   Game Layout — mobile-first flex column
+   ============================================================ */
+.game-area {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	padding: 12px;
+	max-width: 1100px;
+	margin: 0 auto;
+}
+
+/* Mobile stacking order: dealer → controls → player */
+#dealer-section  { order: 1; }
+.controls-section { order: 2; }
+#player-section  { order: 3; }
+
+/* ============================================================
+   Hand Sections
+   ============================================================ */
+.hand-section {
+	background: rgba(0,0,0,0.28);
+	border: 1px solid rgba(201,168,76,0.18);
+	border-radius: 12px;
+	padding: 12px;
+	flex: 1;
+}
+
+.hand-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 10px;
+	padding-bottom: 8px;
+	border-bottom: 1px solid rgba(201,168,76,0.2);
+}
+
+.hand-title {
+	font-family: Georgia, serif;
+	font-size: 0.85rem;
+	color: #c9a84c;
+	text-transform: uppercase;
+	letter-spacing: 3px;
+	font-weight: bold;
+}
+
+.hand-score {
+	font-size: 0.95rem;
+	font-weight: bold;
+	color: #ccc;
+	background: rgba(0,0,0,0.4);
+	padding: 3px 12px;
+	border-radius: 20px;
+	min-width: 44px;
+	text-align: center;
+	transition: color 0.25s ease;
+}
+
+.status-win     { color: #4ade80 !important; text-shadow: 0 0 10px rgba(74,222,128,0.45); }
+.status-special { color: #fbbf24 !important; text-shadow: 0 0 10px rgba(251,191,36,0.5); font-size: 0.72rem; }
+.status-push    { color: #a78bfa !important; }
+.status-bust    { color: #f87171 !important; text-shadow: 0 0 10px rgba(248,113,113,0.45); }
+
+/* ============================================================
+   Cards Container
+   ============================================================ */
+.cards-container {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	min-height: 120px;
+	align-items: flex-start;
+	padding: 4px 2px;
+}
+
+/* ============================================================
+   Playing Cards
+   ============================================================ */
+.playing-card {
+	position: relative;
+	width: 68px;
+	height: 96px;
 	background: #fff;
-	border: 2px solid #ccc;
-	border-radius: 8px;
-	box-shadow: 2px 2px 5px rgba(0,0,0,0.4);
+	border: 1px solid #ddd;
+	border-radius: 7px;
+	box-shadow: 2px 3px 10px rgba(0,0,0,0.65);
 	font-family: Georgia, serif;
 	font-weight: bold;
-	box-sizing: border-box;
+	flex-shrink: 0;
+	animation: dealCard 0.22s ease-out;
 }
 
-.card-red { color: #cc0000; }
-.card-black { color: #111111; }
+@keyframes dealCard {
+	from { opacity: 0; transform: translateY(-14px) scale(0.82); }
+	to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.card-red   { color: #c0392b; }
+.card-black { color: #111; }
 
 .card-corner {
 	position: absolute;
-	font-size: 14px;
+	font-size: 10px;
 	line-height: 1.2;
 	text-align: center;
+	user-select: none;
 }
-
-.card-top-left {
-	top: 5px;
-	left: 6px;
-}
-
-.card-bottom-right {
-	bottom: 5px;
-	right: 6px;
-	transform: rotate(180deg);
-}
+.card-top-left     { top: 4px; left: 5px; }
+.card-bottom-right { bottom: 4px; right: 5px; transform: rotate(180deg); }
 
 .card-center-suit {
 	position: absolute;
 	top: 50%;
 	left: 50%;
 	transform: translate(-50%, -50%);
-	font-size: 36px;
+	font-size: 24px;
 	line-height: 1;
+	user-select: none;
 }
 
-.jumbotron {
-	color: #F7FCF8;
-	outline: 1pt;
-	background-image: url(https://www.circusreno.com/images/casino/casinoPromotionsHeader.jpg);
-	background-size: cover;
+/* Card back — navy with gold inset border */
+.card-back {
+	background: #0f0f48;
+	border-color: #1a1a70;
+}
+
+.card-back-inset {
+	position: absolute;
+	inset: 5px;
+	border-radius: 4px;
+	border: 1.5px solid rgba(201,168,76,0.38);
+	background: repeating-linear-gradient(
+		45deg,
+		rgba(201,168,76,0.07),
+		rgba(201,168,76,0.07) 3px,
+		transparent 3px,
+		transparent 7px
+	);
+}
+
+/* ============================================================
+   Controls
+   ============================================================ */
+.controls-section {
+	display: flex;
+	flex-direction: row;
+	gap: 8px;
+	justify-content: center;
+	padding: 4px 0;
+}
+
+.btn-game {
+	flex: 1;
+	max-width: 115px;
+	padding: 13px 6px;
+	border: none;
+	border-radius: 8px;
+	font-size: 0.82rem;
+	font-weight: 700;
+	cursor: pointer;
+	font-family: Arial, Helvetica, sans-serif;
+	text-transform: uppercase;
+	letter-spacing: 1px;
+	transition: transform 0.1s ease, box-shadow 0.1s ease;
+	-webkit-tap-highlight-color: transparent;
+}
+
+.btn-game:disabled {
+	opacity: 0.32;
+	cursor: not-allowed;
+	transform: none !important;
+	box-shadow: none !important;
+}
+
+.btn-hit   { background: #16a34a; color: #fff; box-shadow: 0 4px 0 #14532d; }
+.btn-stay  { background: #1d4ed8; color: #fff; box-shadow: 0 4px 0 #1e3a8a; }
+.btn-again { background: #7c3aed; color: #fff; box-shadow: 0 4px 0 #4c1d95; }
+
+.btn-hit:not(:disabled):hover   { background: #15803d; }
+.btn-stay:not(:disabled):hover  { background: #1e40af; }
+.btn-again:not(:disabled):hover { background: #6d28d9; }
+
+.btn-hit:not(:disabled):active,
+.btn-stay:not(:disabled):active,
+.btn-again:not(:disabled):active {
+	transform: translateY(3px);
+	box-shadow: 0 1px 0 currentColor;
+}
+
+/* ============================================================
+   Desktop Layout (768px+)
+   ============================================================ */
+@media (min-width: 768px) {
+	.game-area {
+		flex-direction: row;
+		align-items: flex-start;
+		padding: 18px 16px;
+		gap: 14px;
+	}
+
+	/* Reorder: player left — controls center — dealer right */
+	#player-section  { order: 1; }
+	.controls-section { order: 2; }
+	#dealer-section  { order: 3; }
+
+	.controls-section {
+		flex-direction: column;
+		align-items: stretch;
+		width: 104px;
+		flex-shrink: 0;
+		gap: 10px;
+		padding-top: 46px;
+		justify-content: flex-start;
+	}
+
+	.btn-game { max-width: none; width: 100%; }
+
+	.playing-card    { width: 80px; height: 112px; }
+	.card-corner     { font-size: 11px; }
+	.card-center-suit { font-size: 28px; }
+	.cards-container { min-height: 150px; }
+}
+
+@media (min-width: 1024px) {
+	.playing-card    { width: 90px; height: 126px; }
+	.card-corner     { font-size: 13px; }
+	.card-center-suit { font-size: 34px; }
 }

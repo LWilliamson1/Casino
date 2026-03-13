@@ -1,17 +1,20 @@
 $(document).ready(function() {
 
 	function renderCard(card) {
-		var suitSymbols = { "SPADES": "&#9824;", "HEARTS": "&#9829;", "DIAMONDS": "&#9830;", "CLUBS": "&#9827;" };
+		var symbols = { SPADES: "♠", HEARTS: "♥", DIAMONDS: "♦", CLUBS: "♣" };
 		var suitClass = (card.suit === "HEARTS" || card.suit === "DIAMONDS") ? "card-red" : "card-black";
-		var displayValue = card.value === "ACE" ? "A" :
-		                   card.value === "JACK" ? "J" :
-		                   card.value === "QUEEN" ? "Q" :
-		                   card.value === "KING" ? "K" : card.value;
-		var sym = suitSymbols[card.suit];
+		var val = { ACE: "A", JACK: "J", QUEEN: "Q", KING: "K" }[card.value] || card.value;
+		var sym = symbols[card.suit];
 		return '<div class="playing-card ' + suitClass + '">' +
-		       '<div class="card-corner card-top-left">' + displayValue + '<br>' + sym + '</div>' +
+		       '<div class="card-corner card-top-left">' + val + '<br>' + sym + '</div>' +
 		       '<div class="card-center-suit">' + sym + '</div>' +
-		       '<div class="card-corner card-bottom-right">' + displayValue + '<br>' + sym + '</div>' +
+		       '<div class="card-corner card-bottom-right">' + val + '<br>' + sym + '</div>' +
+		       '</div>';
+	}
+
+	function renderCardBack() {
+		return '<div class="playing-card card-back" id="dealer-hidden">' +
+		       '<div class="card-back-inset"></div>' +
 		       '</div>';
 	}
 
@@ -28,6 +31,7 @@ $(document).ready(function() {
 		this.score = 0;
 		this.cardCount = 0;
 		this.hand = [];
+
 		this.setScore = function setScore(){
 			this.score = 0;
 			var aceCount = 0;
@@ -69,8 +73,6 @@ $(document).ready(function() {
 						this.score=oneCardScore;
 					}
 				}
-
-
 			}
 			while(this.score > 21 && aceCount > 0){
 				this.score = this.score - 10;
@@ -78,22 +80,24 @@ $(document).ready(function() {
 			}
 			this.displayScore();
 		}
+
 		this.getScore = function getScore(){
 			return this.score;
 		}
+
 		this.displayScore = function displayScore(){
-			$("#"+this.type+"Status").html("Count:"+this.score);
+			$("#"+this.type+"Status").html(this.score);
 		}
 
 		this.bust = function bust(){
-			$("#"+this.type+"Status").html("Bust");
+			$("#"+this.type+"Status").html("BUST").addClass("status-bust");
 			busted();
 		}
+
 		this.hit = function hit(deckId){
 			draw(deckId, this, 1);
 			this.setScore();
 			this.showHand();
-
 			if(this.score > 21){
 				this.bust();
 			}
@@ -105,14 +109,20 @@ $(document).ready(function() {
 				cardsToShow = 1;
 			}
 
-			for(var i = this.cardCount; i < cardsToShow; i++){
-				if(this.cardCount % 3 == 0 && this.cardCount != 0){
-					$("#"+this.name+" tr").last().after("<tr><td>" + renderCard(this.hand[i]) + "</td></tr>");
-				}
-				else{
-					$("#"+this.name+" tr").last().append("<td>" + renderCard(this.hand[i]) + "</td>");
-				}
+			// Reveal face-down placeholder when dealer shows remaining cards
+			if(this.type=="dealer" && this.cardCount > 0){
+				$("#dealer-hidden").remove();
 			}
+
+			for(var i = this.cardCount; i < cardsToShow; i++){
+				$("#"+this.name).append(renderCard(this.hand[i]));
+			}
+
+			// Add face-down card next to dealer's first visible card
+			if(this.type=="dealer" && this.cardCount == 0 && this.hand.length > 1){
+				$("#"+this.name).append(renderCardBack());
+			}
+
 			if(this.cardCount==0 && this.type == "player"){
 				this.cardCount = 2;
 			}
@@ -165,40 +175,36 @@ $(document).ready(function() {
 		dealer.setScore();
 		while(dealer.score < 17 && dealer.score < 21){
 			dealer.hit(deckId);
-			setTimeout(function(){
-			},1000);
 		}
 	}
 
 	displayWinner = function(){
-
 		if(dealer.score > player.score && dealer.score <= 21 || player.score > 21){
 			if(dealer.hand.length == 2 && dealer.score==21){
 				dealer.setScore();
 				dealer.showHand();
-				$("#dealerStatus").html("BLACKJACK!").css("color", "gold");
+				$("#dealerStatus").html("BLACKJACK!").addClass("status-special");
 			}
 			else{
-				$("#dealerStatus").html("Winner!");
+				$("#dealerStatus").html("WIN").addClass("status-win");
 			}
 		}
 		else if(player.score > dealer.score && player.score <= 21 || dealer.score > 21){
 			if(player.hand.length == 2 && player.score==21){
 				dealer.showHand();
 				dealer.setScore();
-				$("#playerStatus").html("BLACKJACK!").css("color", "gold");
-
+				$("#playerStatus").html("BLACKJACK!").addClass("status-special");
 			}
 			else{
-				$("#playerStatus").html("Winner!");
+				$("#playerStatus").html("WIN").addClass("status-win");
 			}
 		}
 		else{
-			//push
-			$("#playerStatus").html("Push");
-			$("#dealerStatus").html("Push");
+			$("#playerStatus").html("PUSH").addClass("status-push");
+			$("#dealerStatus").html("PUSH").addClass("status-push");
 		}
 	}
+
 	busted = function(){
 		displayWinner(dealer, player);
 		hit.prop("disabled",true);
@@ -207,7 +213,6 @@ $(document).ready(function() {
 	}
 
 	startGame = function() {
-
 		draw(deck.id, player, 2);
 		draw(deck.id, dealer, 2);
 
@@ -220,14 +225,12 @@ $(document).ready(function() {
 
 		player.showHand();
 		dealer.showHand();
-
 	}
 
 	var deck;
 	createNewDeck();
 
 	if(deck.success){
-
 		var player = new Player("player", "Player1");
 		var dealer = new Player("dealer", "Dealer");
 	}
@@ -242,35 +245,33 @@ $(document).ready(function() {
 
 	hit.mouseup(function() {
 		player.hit(deck.id);
-
 	});
+
 	stay.mouseup(function() {
 		hit.prop("disabled",true);
-		dealer.showHand();
 		stay.prop("disabled",true);
+		dealer.showHand();
 		playDealer(dealer, deck.id);
 		displayWinner(dealer, player);
 	});
+
 	playAgain.mouseup(function() {
 		if(deck.remaining < 100){
 			shuffleDeck(deck);
 		}
-
 		if(deck.success){
-
 			player = new Player("player", "Player1");
 			dealer = new Player("dealer", "Dealer");
 			hit.prop("disabled",false);
 			stay.prop("disabled",false);
-			$(".table").html("<tr></tr>");
-			$("#playerStatus").css("color", "#F7FCF8");
-			$("#dealerStatus").css("color", "#F7FCF8");
+			$(".cards-container").empty();
+			$("#playerStatus, #dealerStatus")
+				.html("&mdash;")
+				.removeClass("status-win status-special status-push status-bust");
 		}
 		else{
 			//error message
 		}
-
-
 		startGame();
 	});
 });
